@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Graphs of Extracted Data</title>
+</head>
+<body>
+    <h1>Graphs of Extracted Data</h1>
+    
+    <h3>Coordinates Plot:</h3>
+    {% if coordinate_data %}
+        {% for index, coordinate_dict in enumerate(coordinate_data) %}
+            <div>
+                <h4>Plot {{ index + 1 }}: {{ coordinate_dict.keys() | first }}</h4>  <!-- Title for each plot with the user-provided key -->
+                <img src="{{ url_for('static', filename='plots/' ~ (coordinate_dict.keys() | first) ~ '_plot_' ~ index ~ '.jpg') }}" alt="Coordinate Plot {{ index + 1 }}">
+            </div>
+        {% endfor %}
+    {% else %}
+        <p>No coordinates data available.</p>
+    {% endif %}
+
+    <h3>Number Plot:</h3>
+    {% if number_data %}
+        {% for index, number_dict in enumerate(number_data) %}
+            <div>
+                <h4>Plot {{ index + 1 }}: {{ number_dict.keys() | first }}</h4>  <!-- Title for each plot with the user-provided key -->
+                <img src="{{ url_for('static', filename='plots/' ~ (number_dict.keys() | first) ~ '_plot_' ~ index ~ '.jpg') }}" alt="Number Plot {{ index + 1 }}">
+            </div>
+        {% endfor %}
+    {% else %}
+        <p>No number data available.</p>
+    {% endif %}
+
+    <h3>Time Histogram:</h3>
+    {% if time_data %}
+        {% for index, time_dict in enumerate(time_data) %}
+            <div>
+                <h4>Plot {{ index + 1 }}: {{ time_dict.keys() | first }}</h4>  <!-- Title for each plot with the user-provided key -->
+                <img src="{{ url_for('static', filename='plots/' ~ (time_dict.keys() | first) ~ '_plot_' ~ index ~ '.jpg') }}" alt="Time Plot {{ index + 1 }}">
+            </div>
+        {% endfor %}
+    {% else %}
+        <p>No time data available.</p>
+    {% endif %}
+
+    <!-- Form to toggle timestamps -->
+    <form method="POST" action="{{ url_for('show_graphs') }}">
+        <label for="show_timestamps">Show Timestamps:</label>
+        <input type="checkbox" name="show_timestamps" id="show_timestamps" value="yes" {% if show_timestamps %}checked{% endif %}>
+        <input type="submit" value="Update Graphs">
+    </form>
+	
+	<h2>Downloadable Graphs</h2>
+    <ul>
+        {% for filename in plot_filenames %}
+            <li>
+                <a href="{{ url_for('download_file', filename=filename) }}">Download {{ filename }}</a>
+            </li>
+        {% endfor %}
+    </ul>
+</body>
+</html>

@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Extraction Results</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        body {
+            padding: 20px;
+        }
+        .section {
+            margin-bottom: 20px;
+        }
+        h3 {
+            margin-bottom: 10px;
+        }
+        .data-block {
+            margin-left: 20px;  /* Indentation for better readability */
+        }
+    </style>
+</head>
+<body>
+    <h1>Results</h1>
+
+    <form action="{{ url_for('update_results') }}" method="post">
+	{% for coord_dict in coordinate_data %}
+		<h3>Coordinate Data: Key: {{ coord_dict.keys() | first }}</h3>
+		<table class="table table-bordered">
+			<thead>
+				<tr>
+					<th>Index</th>
+					<th>Degrees (°)</th>
+					<th>Minutes (')</th>
+					<th>Seconds (")</th>
+					<th>Direction</th>
+				</tr>
+			</thead>
+			<tbody>
+				{% for coords in coord_dict.values() %}
+					{% for coord_index, coord in enumerate(coords) %}
+					<tr>
+						<td>{{ coord_index }}</td>
+
+						<!-- Degrees -->
+						<td>
+							<input type="number" name="coordinate[{{ coord_dict.keys() | first }}][{{ coord_index }}][degree]" 
+								   value="{{ coord.split('°')[0] }}" min="-180" max="180" required>
+						</td>
+
+						<!-- Minutes (safely extract minutes) -->
+						<td>
+							{% set coord_parts = coord.split('°') %}
+							{% if coord_parts|length > 1 %}
+								{% set degree_minute_part = coord_parts[1] %}
+								{% set minute_part = degree_minute_part.split("'")[0] if "'" in degree_minute_part else '00' %}
+							{% else %}
+								{% set minute_part = '00' %}
+							{% endif %}
+							<input type="number" name="coordinate[{{ coord_dict.keys() | first }}][{{ coord_index }}][minute]" 
+								   value="{{ minute_part }}" min="0" max="59" required>
+						</td>
+
+						<!-- Seconds (safely extract seconds) -->
+						<td>
+							{% if "'" in coord %}
+								{% set seconds_direction_part = coord.split("'")[1] %}
+								{% set second_part = seconds_direction_part.split('"')[0] if '"' in seconds_direction_part else '00.00' %}
+							{% else %}
+								{% set second_part = '00.00' %}
+							{% endif %}
+							<input type="text" name="coordinate[{{ coord_dict.keys() | first }}][{{ coord_index }}][second]" 
+								   value="{{ second_part }}" 
+								   pattern="^([0-5][0-9]|[0-9])(\.[0-9]{1,2})?$" required placeholder="00.00" 
+								   title="Enter seconds in the format 00 or 00.00">
+						</td>
+
+						<!-- Direction -->
+						<td>
+							{% set direction_part = coord[-1] if coord[-1] in 'NSEW' else 'E' %}
+							<input type="text" name="coordinate[{{ coord_dict.keys() | first }}][{{ coord_index }}][direction]" 
+								   value="{{ direction_part }}" required maxlength="1" pattern="[NnSsEeWw]" 
+								   title="Enter N, S, E, or W">
+						</td>
+					</tr>
+					{% endfor %}
+				{% endfor %}
+			</tbody>
+		</table>
+	{% endfor %}
+
+
+
+		<h3>Number Data</h3>
+		{% for number_dict in number_data %}
+			<h4>Number Data Key: {{ number_dict.keys() | first }}</h4>
+			<table class="table table-bordered">
+				<thead>
+					<tr>
+						<th>Index</th>
+						<th>Value</th>
+					</tr>
+				</thead>
+				<tbody>
+					{% for key, values in number_dict.items() %}
+						{% for number_index, value in enumerate(values) %}
+						<tr>
+							<td>{{ number_index }}</td>
+								<td>
+									<input type="number" name="number[{{ number_dict.keys() | first }}][{{ number_index }}]" 
+										   value="{{ value }}" required 
+										   min="0" 
+										   step="any">  <!-- Allows decimal values -->
+								</td>
+						</tr>
+						{% endfor %}
+					{% endfor %}
+				</tbody>
+			</table>
+		{% endfor %}
+
+
+        <h3>Time Data</h3>
+		 {% for time_dict in time_data %}
+			<h4>Time Data Key: {{ time_dict.keys() | first }}</h4>
+			<table class="table table-bordered">
+				<thead>
+					<tr>
+						<th>Index</th>
+						<th>Hours (HH)</th>
+						<th>Minutes (MM)</th>
+						<th>Seconds (SS)</th>
+					</tr>
+				</thead>
+				<tbody>
+					{% for key, values in time_dict.items() %}
+						{% for time_index, value in enumerate(values) %}
+						<tr>
+							<td>{{ time_index }}</td>
+							<td>
+								<input type="number" name="{{ key }}_{{ time_index }}_hours" value="{{ value.split(':')[0] }}" min="0" max="23" required>
+							</td>
+							<td>
+								<input type="number" name="{{ key }}_{{ time_index }}_minutes" value="{{ value.split(':')[1] }}" min="0" max="59" required>
+							</td>
+							<td>
+								<input type="number" name="{{ key }}_{{ time_index }}_seconds" value="{{ value.split(':')[2] }}" min="0" max="59.99" step="0.01" required>
+							</td>
+						</tr>
+						{% endfor %}
+					{% endfor %}
+				</tbody>
+			</table>
+		{% endfor %}
+
+        <button type="submit" class="btn btn-primary">Update Results</button>
+    </form>
+	<br>
+
+	<h1>Download Coordinate Format Data to CSV</h1>
+    <form method="post" action="/download_csv_coordinate">
+        <button type="submit">Download CSV</button>
+    </form>
+	
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <ul>
+                {% for category, message in messages %}
+                    <li class="{{ category }}">{{ message }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    {% endwith %}
+    <br>
+	
+	
+	<h1>Download Number Format Data to CSV</h1>
+    <form method="post" action="/download_csv_number">
+        <button type="submit">Download CSV</button>
+    </form>
+	
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <ul>
+                {% for category, message in messages %}
+                    <li class="{{ category }}">{{ message }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    {% endwith %}
+    <br>
+
+	<h1>Download Time Format Data to CSV</h1>
+    <form method="post" action="/download_csv_time">
+        <button type="submit">Download CSV</button>
+    </form>
+	
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <ul>
+                {% for category, message in messages %}
+                    <li class="{{ category }}">{{ message }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    {% endwith %}
+    <br>
+    <a href="{{ url_for('get_plots') }}" class="btn btn-secondary">Show Graphs</a>
+</body>
+</html>
