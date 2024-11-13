@@ -1,0 +1,73 @@
+To open the ROI window at the maximum screen size for any computer, you can retrieve the screen dimensions dynamically using OpenCV's window properties and set the ROI window to those dimensions. Here’s how to modify the code to achieve that:
+
+1. Get the screen resolution.
+2. Create an OpenCV window that matches the screen dimensions.
+3. Display the image in this window for ROI selection.
+
+Here’s the modified code:
+
+```python
+import cv2
+import pytesseract
+import re
+import unicodedata
+import os
+import data_storage
+import ctypes
+
+# Get current directory and configure Tesseract path
+current_dir = os.path.dirname(__file__)
+parent_dir = os.path.abspath(os.path.join(current_dir, "../"))
+file_path = os.path.join(parent_dir, "assets\\Tesseract-OCR\\Tesseract-OCR\\tesseract.exe")
+pytesseract.pytesseract.tesseract_cmd = file_path
+
+def select_roi_and_extract(filepath, is_number):
+    img = cv2.imread(filepath)
+    clone = img.copy()
+
+    if img is None:
+        print("Error: Could not load the image. Please check the file path.")
+        return None, None
+
+    # Get screen resolution using ctypes for Windows
+    user32 = ctypes.windll.user32
+    screen_width, screen_height = user32.GetSystemMetrics(0), user32.GetSystemMetrics(1)
+
+    # Resize the image to fit the screen size if it's larger
+    img_height, img_width = img.shape[:2]
+    if img_width > screen_width or img_height > screen_height:
+        scale_factor = min(screen_width / img_width, screen_height / img_height)
+        img = cv2.resize(img, (int(img_width * scale_factor), int(img_height * scale_factor)))
+
+    # Create a named window and resize it to maximum screen size
+    cv2.namedWindow("Select ROI", cv2.WINDOW_NORMAL)
+    cv2.resizeWindow("Select ROI", screen_width, screen_height)
+
+    # Select ROI on the resized image
+    roi = cv2.selectROI("Select ROI", img, fromCenter=False, showCrosshair=False)
+    cv2.destroyAllWindows()
+
+    x, y, w, h = roi
+    if w and h:
+        roi_img = clone[y:y+h, x:x+w]
+        gray = cv2.cvtColor(roi_img, cv2.COLOR_BGR2GRAY)
+        if is_number:
+            text = pytesseract.image_to_string(roi_img, config="--psm 7 -c tessedit_char_whitelist=0123456789")
+        else:
+            text = pytesseract.image_to_string(gray, config='--psm 7')
+
+        return text, (x, y, w, h)
+    
+    return None, None
+
+# ... (the rest of your code remains unchanged)
+
+```
+
+### Explanation:
+
+- **`user32.GetSystemMetrics`**: This function from the `ctypes` library retrieves the screen width and height for Windows systems.
+- **`cv2.resizeWindow`**: Resizes the OpenCV window to match the screen dimensions.
+- **Scaling the Image**: If the image is larger than the screen, the code scales it down to fit within the screen while maintaining the aspect ratio.
+
+This should open the ROI window at full screen size on any computer. Let me know if you'd like additional adjustments.
