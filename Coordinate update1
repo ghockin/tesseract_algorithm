@@ -1,0 +1,62 @@
+To update your code to produce the coordinate format `N50°58.94`, you can modify the `transform_coordinate` function to produce this style: degrees with the cardinal direction (`N`, `S`, `E`, `W`), followed by a single degree symbol, and the minutes rounded to two decimal places without including seconds.
+
+I'll adjust the `transform_coordinate` function accordingly. Here’s the modified version:
+
+```python
+def transform_coordinate(coord):
+    # Check if the coordinate is already in the correct format
+    if is_correct_format(coord):
+        return coord  # If already correct, return as is
+
+    # Extract the direction (last character)
+    direction = coord[-1]  # Last character (E, W, N, S)
+    degree_part = coord[:-1]  # Everything except the direction
+
+    # Ensure the degree part contains exactly one degree symbol
+    if '°' not in degree_part:
+        raise ValueError("Input coordinate does not contain a degree symbol.")
+
+    # Split at the degree symbol
+    degree_parts = degree_part.split('°')
+    if len(degree_parts) != 2:
+        raise ValueError("Invalid coordinate format. Expected format: 'degrees°minutesseconds'.")
+
+    # Parse degrees and remaining minutes/seconds
+    degrees = degree_parts[0]  # Extract the degrees part
+    minutes_seconds = degree_parts[1]  # Extract minutes and seconds part
+
+    # Ensure we have at least 2 characters for minutes, pad if necessary
+    if len(minutes_seconds) < 2:
+        minutes_seconds = minutes_seconds.zfill(2)
+
+    # Determine minutes and seconds
+    minutes = minutes_seconds[:2]  # First two characters are minutes
+    seconds = minutes_seconds[2:]  # Remaining characters are seconds, if any
+
+    # Convert seconds to decimal and combine with minutes
+    seconds_decimal = float("0." + seconds) if seconds else 0.0
+    minutes_decimal = int(minutes) + seconds_decimal
+    minutes_rounded = f"{minutes_decimal:.2f}"  # Rounded to two decimals
+
+    # Format in the desired structure (e.g., N50°58.94)
+    transformed_coord = f"{direction}{degrees}°{minutes_rounded}"
+    return transformed_coord
+```
+
+### Explanation of Changes
+- **Direction Position**: Now, the direction (`N`, `S`, `E`, `W`) is prefixed before the degrees value.
+- **Rounded Minutes**: The minutes are rounded to two decimal places for consistency.
+- **Simplified Format**: The format removes the seconds field entirely, as required.
+
+This function will now return coordinates in the format `N50°58.94`. 
+
+### Update Usage in `extract_coordinates`
+Ensure the `extract_coordinates` function appends coordinates in the new format:
+
+```python
+transformed_coord = transform_coordinate(coord)
+data_storage.extracted_text.append(transformed_coord)  # Appending the new format
+return transformed_coord
+```
+
+This should give you the format `N50°58.94` for extracted coordinates.
