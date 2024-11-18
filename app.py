@@ -87,20 +87,20 @@ def select_data():
         data_key = request.form['data_key']  # Capture the data key from the form
         
         if data_type == 'coordinate':
-            extracted_data = process_images_in_folder(data_storage.image_frames_path_test, False)
+            extracted_data = process_images_in_folder(False)
             data_storage.coordinate_data.append({data_key: extracted_data['coordinates']})
 
 
         elif data_type == 'number':
-            extracted_data = process_images_in_folder(data_storage.image_frames_path_test, True)
+            extracted_data = process_images_in_folder(True)
             data_storage.number_data.append({data_key: extracted_data['numbers']})
 
 
         elif data_type == 'time':
-            extracted_data = process_images_in_folder(data_storage.image_frames_path_test, False)
+            extracted_data = process_images_in_folder(False)
             data_storage.time_data.append({data_key: extracted_data['times']})
 
-
+    print(data_storage.coordinate_data, data_storage.number_data, data_storage.time_data)
     return render_template('select_data.html', 
                            coordinate_data=data_storage.coordinate_data, 
                            number_data=data_storage.number_data, 
@@ -108,11 +108,14 @@ def select_data():
 
 @app.route('/results')
 def results():
-    return render_template('results.html', 
-                           coordinate_data=data_storage.coordinate_data, 
-                           number_data=data_storage.number_data, 
-                           time_data=data_storage.time_data, 
-                           enumerate=enumerate)
+    return render_template(
+        'results.html',
+        coordinate_data=data_storage.coordinate_data,
+        number_data=data_storage.number_data,
+        time_data=data_storage.time_data,
+        enumerate=enumerate
+    )
+
 
 @app.route('/update_results', methods=['POST'])
 def update_results():
@@ -120,39 +123,37 @@ def update_results():
     # Coordinate
     # Initialize an empty dictionary to hold parsed coordinates with dynamic keys
     parsed_coordinates = {}
-    
+
     # Iterate over the form data to manually reconstruct the coordinates structure
     for key in request.form:
         if key.startswith('coordinate'):
-            # Extract the actual coordinate key (e.g., 'number', 'longitude') and the field (degree, minute, etc.)
+            # Extract the actual coordinate key (e.g., 'number') and the field (degree, minute, etc.)
             key_parts = key.replace('coordinate[', '').replace(']', '').split('[')
-            coord_key = key_parts[0]  # This will be the dynamic data name (e.g., 'number', 'longitude', etc.)
-            coord_index = int(key_parts[1])  # This will be the index (e.g., 0, 1, 2)
-            field = key_parts[2]  # This will be the field (degree, minute, etc.)
+            coord_key = key_parts[0]  # The key, e.g., 'number'
+            coord_index = int(key_parts[1])  # The index, e.g., 0, 1, 2
+            field = key_parts[2]  # The field, e.g., 'degree', 'minute', 'direction'
 
-            # Initialize the dictionary if the key doesn't exist
+            # Initialize the dictionary for this key if it doesn't exist
             if coord_key not in parsed_coordinates:
                 parsed_coordinates[coord_key] = []
 
-            # Expand the list if needed
+            # Expand the list for this key if necessary
             while len(parsed_coordinates[coord_key]) <= coord_index:
-                parsed_coordinates[coord_key].append({'degree': '', 'minute': '', 'second': '', 'direction': ''})
+                parsed_coordinates[coord_key].append({'degree': '', 'minute': '', 'direction': ''})
 
-            # Check if the entered value is lowercase and convert to uppercase
-            value = request.form[key]
-            if value.islower():
+            # Retrieve and normalize the value (convert to uppercase for direction if needed)
+            value = request.form[key].strip()
+            if field == 'direction':
                 value = value.upper()
 
             # Assign the value to the appropriate field
             parsed_coordinates[coord_key][coord_index][field] = value
 
-    # Check if the user-specified key exists in data_storage and update or initialize
+    # Update the data storage with the parsed coordinates
     for key, coord_list in parsed_coordinates.items():
-        # Ensure data_storage.coordinate_data has at least one entry
         if len(data_storage.coordinate_data) == 0:
             data_storage.coordinate_data.append({})
 
-        # Find or create the entry for the current coordinate key
         existing_entry = None
         for entry in data_storage.coordinate_data:
             if key in entry:
@@ -160,23 +161,23 @@ def update_results():
                 break
 
         if existing_entry is None:
-            # If no existing entry for this key, create a new one
             existing_entry = {key: ['' for _ in range(len(coord_list))]}
             data_storage.coordinate_data.append(existing_entry)
 
-        # Update the data_storage with the parsed coordinates
+        # Fixing the degree and direction split correctly
         for coord_index, coord_values in enumerate(coord_list):
-            # Format the coordinates into the required format
-            formatted_coord = f"{coord_values['degree'].zfill(2)}°{coord_values['minute'].zfill(2)}'{coord_values['second'].zfill(2)}\"{coord_values['direction']}"
+            degree_value = coord_values['degree']
+            minute_value = coord_values['minute']
+            direction_value = coord_values['direction']
+            
+            # Correctly format the coordinates by combining degree, minutes, and direction
+            formatted_coord = f"{direction_value}{degree_value}°{minute_value}'"
 
-            # Update or append the coordinate in data_storage
             if coord_index < len(existing_entry[key]):
-                # If we have an existing value, update it
                 existing_entry[key][coord_index] = formatted_coord
             else:
-                # If the coord_index exceeds the existing length, append the new coordinate
                 existing_entry[key].append(formatted_coord)
-
+                
     #Number
     # Initialize a dictionary to hold parsed number data
     parsed_numbers = {}
@@ -220,6 +221,7 @@ def update_results():
                     seconds_formatted = f"{seconds_float:.2f}"
                     time_dict[key][time_index] = f"{int(hours):02}:{int(minutes):02}:{seconds_formatted}"
 
+    print(data_storage.coordinate_data)
     return redirect(url_for('results'))
 
 

@@ -1,5 +1,4 @@
 # scripts/data_storage.py
-image_frames_path_test = 'static/images/frames/'
 image_frames_path = 'static/images/frames/'
 image_output_path = 'static/images/output/'
 uploads_path = 'uploads/'
@@ -12,6 +11,7 @@ extracted_text = []
 coordinate_data = []
 number_data = []
 time_data = []
+list_of_images = []
 
 # Video properties
 video_length = 0  # Length of the video in seconds

@@ -50,6 +50,7 @@ def extract_frames(video_path, start_time, end_time, interval_time):
 
     # Initialize the list to store timestamps for each extracted frame
     data_storage.extraction_times_in_seconds = []  # Ensure this list is initialized before use
+    data_storage.list_of_images = []  # Ensure this list is initialized before use
 
     while current_frame <= end_frame:
         # Set the video position to the current frame
@@ -63,6 +64,7 @@ def extract_frames(video_path, start_time, end_time, interval_time):
         # Save the current frame with a numerical name
         frame_path = os.path.join(data_storage.image_frames_path, f"frame_{extracted_frame_count}.jpg")
         cv2.imwrite(frame_path, image)
+        data_storage.list_of_images.append(frame_path)
         
         # Calculate the timestamp in seconds
         timestamp = current_frame / fps  # Convert frame number to seconds

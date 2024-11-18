@@ -13,32 +13,41 @@ def dms_to_decimal(degrees, minutes, seconds):
 
 def convert_geographic_coordinate(coordinates):
     converted_coordinates = []
-    
+
     for coord in coordinates:
-        # Split the degrees part
+        # First, remove the direction (N, S, E, W) if it's included in the degree part
+        if coord[0] in ['N', 'S', 'E', 'W']:
+            direction = coord[0]  # Direction is the first character
+            coord = coord[1:]  # Remove the direction character
+        else:
+            direction = ''  # If no direction, set to empty string
+
+        # Split the degrees and remainder
         degree_part, remainder = coord.split('°')
 
-        # Default values for minutes and seconds in case they are missing
-        minute_part = '00'
-        second_part = '00'
-
-        # Try to split the minutes and seconds
+        # Now handle the minutes and potential direction
         if "'" in remainder:
-            minute_part, remainder = remainder.split("'")
-            if '"' in remainder:
-                second_part = remainder.split('"')[0]
+            minute_part, direction_remainder = remainder.split("'")
+            direction = direction_remainder.strip()  # Update direction if it's present
         else:
-            minute_part = remainder.split('"')[0] if '"' in remainder else '00'
+            minute_part = remainder.strip()  # No minutes, just decimal
+            direction = direction.strip()
 
-        # Convert degree, minute, and second to decimal degrees
+        # Convert the degree and minute parts to float
         degrees = float(degree_part)
         minutes = float(minute_part)
-        seconds = float(second_part)  # Handles both whole and decimal seconds
 
-        decimal_degrees = degrees + (minutes / 60) + (seconds / 3600)
+        # If direction is South or West, make the degrees negative
+        if direction in ['S', 'W']:
+            degrees = -degrees
+
+        # Calculate decimal degrees
+        decimal_degrees = degrees + (minutes / 60)
+
         converted_coordinates.append(decimal_degrees)
-    
+
     return converted_coordinates
+
 
 
 # Function to convert HH:MM:SS to total seconds
