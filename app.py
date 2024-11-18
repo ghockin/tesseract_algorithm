@@ -83,28 +83,36 @@ def upload_video():
 @app.route('/select_data', methods=['GET', 'POST'])
 def select_data():
     if request.method == 'POST':
-        data_type = request.form['data_type']
-        data_key = request.form['data_key']  # Capture the data key from the form
+        # Safely access 'data_type' using .get() to avoid KeyError
+        data_type = request.form.get('data_type')
+
+        # If 'data_type' is not selected, flash an error message and stay on the same page
+        if not data_type:
+            flash("No data type selected. Please select a data type.", 'error')
+            return render_template('select_data.html', 
+                                   coordinate_data=data_storage.coordinate_data, 
+                                   number_data=data_storage.number_data, 
+                                   time_data=data_storage.time_data)
+
+        data_key = request.form.get('data_key')  # Capture the data key from the form
         
+        # Process data based on selected data type
         if data_type == 'coordinate':
             extracted_data = process_images_in_folder(False)
             data_storage.coordinate_data.append({data_key: extracted_data['coordinates']})
-
-
         elif data_type == 'number':
             extracted_data = process_images_in_folder(True)
             data_storage.number_data.append({data_key: extracted_data['numbers']})
-
-
         elif data_type == 'time':
             extracted_data = process_images_in_folder(False)
             data_storage.time_data.append({data_key: extracted_data['times']})
 
-    print(data_storage.coordinate_data, data_storage.number_data, data_storage.time_data)
+    # Render select_data page with current data and any flashed messages
     return render_template('select_data.html', 
                            coordinate_data=data_storage.coordinate_data, 
                            number_data=data_storage.number_data, 
                            time_data=data_storage.time_data)
+
 
 @app.route('/results')
 def results():

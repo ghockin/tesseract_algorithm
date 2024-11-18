@@ -25,22 +25,31 @@ def select_roi_and_extract(filepath, is_number):
     user32 = ctypes.windll.user32
     screen_width, screen_height = user32.GetSystemMetrics(0), user32.GetSystemMetrics(1)
 
-    # Resize the image to fit the screen size if it's larger
+    # Get image size
     img_height, img_width = img.shape[:2]
-    if img_width > screen_width or img_height > screen_height:
-        scale_factor = min(screen_width / img_width, screen_height / img_height)
-        img = cv2.resize(img, (int(img_width * scale_factor), int(img_height * scale_factor)))
 
-    # Create a named window and resize it to maximum screen size
+    # Calculate scale factor while maintaining aspect ratio
+    scale_factor = min(screen_width / img_width, screen_height / img_height)
+
+    # If the scale factor is less than 1, resize to fit the screen, else use original size
+    if scale_factor < 1:
+        new_width = int(img_width * scale_factor)
+        new_height = int(img_height * scale_factor)
+        img_display = cv2.resize(img, (new_width, new_height))
+    else:
+        img_display = img  # No resize needed if the image is already smaller than the screen
+
+    # Create a named window and resize it to the scaled size for display
     cv2.namedWindow("Select ROI", cv2.WINDOW_NORMAL)
-    cv2.resizeWindow("Select ROI", screen_width, screen_height)
+    cv2.resizeWindow("Select ROI", img_display.shape[1], img_display.shape[0])
 
-    roi = cv2.selectROI("Select ROI", img, fromCenter=False, showCrosshair=False)
+    # Show the resized image to select ROI
+    roi = cv2.selectROI("Select ROI", img_display, fromCenter=False, showCrosshair=False)
     cv2.destroyAllWindows()
 
     x, y, w, h = roi
     if w and h:
-        roi_img = clone[y:y+h, x:x+w]
+        roi_img = clone[y:y+h, x:x+w]  # Use the original image for ROI extraction
         gray = cv2.cvtColor(roi_img, cv2.COLOR_BGR2GRAY)
         if is_number:
             text = pytesseract.image_to_string(roi_img, config="--psm 7 -c tessedit_char_whitelist=0123456789")
@@ -52,7 +61,6 @@ def select_roi_and_extract(filepath, is_number):
     return None, None
 
 def transform_coordinate(coord, direction=None):
-    
     # If the direction is not passed explicitly, we check if it is part of the coordinate.
     if direction is None:
         direction = re.match(r"([nsewNSEW])", coord)

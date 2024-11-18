@@ -7,187 +7,109 @@
     <style>
         body {
             padding: 20px;
+            margin: 0;
+            height: 100vh;
+            position: relative;
         }
-        .section {
-            margin-bottom: 20px;
+
+        /* Spinner style */
+        #loading-spinner {
+            display: none; /* Initially hidden */
+            position: fixed; /* Fixed positioning */
+            top: 50%; /* Center vertically */
+            left: 50%; /* Center horizontally */
+            transform: translate(-50%, -50%); /* Adjust for exact center */
+            z-index: 10001; /* Ensure the spinner is on top */
+            width: 50px; /* Adjust spinner size */
+            height: 50px;
         }
-        h3 {
-            margin-bottom: 10px;
+
+        /* Hide all content when spinner is shown */
+        .hide-content {
+            display: none;
         }
-        .data-block {
-            margin-left: 20px;  /* Indentation for better readability */
+
+        /* Overlay effect to make background dark when loading */
+        #loading-overlay {
+            display: none; /* Initially hidden */
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5); /* Semi-transparent overlay */
+            z-index: 10000;
         }
     </style>
 </head>
 <body>
     <h1>Results</h1>
 
-    <form action="{{ url_for('update_results') }}" method="post">
-	<h3>Coordinate Data</h3>
-	{% for coord_dict in coordinate_data %}
-		{% for key, coords in coord_dict.items() %}
-			<h3>Coordinate Data: Key: {{ key }}</h3>
-			<table class="table table-bordered">
-				<thead>
-					<tr>
-						<th>Index</th>
-						<th>Degrees (°)</th>
-						<th>Minutes (')</th>
-						<th>Direction</th>
-					</tr>
-				</thead>
-				<tbody>
-					{% for coord_index, coord in enumerate(coords) %}
-						<tr>
-							<td>{{ coord_index }}</td>
+    <form action="{{ url_for('update_results') }}" method="post" id="update-form">
+        <!-- Content for coordinate data -->
+        <h3>Coordinate Data</h3>
+        <!-- Your coordinate data table here -->
 
-							<!-- Degrees -->
-							<td>
-								{% set degree_part = coord.split('°')[0][1:] %}  <!-- Extract the degree part after the first character (the direction) -->
-								<input type="number" 
-									   name="coordinate[{{ key }}][{{ coord_index }}][degree]" 
-									   value="{{ degree_part }}" 
-									   min="-180" max="180" required>
-							</td>
+        <h3>Number Data</h3>
+        <!-- Your number data table here -->
 
-							<!-- Minutes -->
-							<td>
-								{% set minute_part = coord.split('°')[1].split("'")[0] %}
-								<input type="number" step="0.01" 
-									   name="coordinate[{{ key }}][{{ coord_index }}][minute]" 
-									   value="{{ minute_part }}" 
-									   min="0" max="59.99" required>
-							</td>
+        <h3>Time Data</h3>
+        <!-- Your time data table here -->
 
-							<!-- Direction -->
-							<td>
-								{% set direction_part = coord[0] %}
-								<input type="text" 
-									   name="coordinate[{{ key }}][{{ coord_index }}][direction]" 
-									   value="{{ direction_part }}" 
-									   maxlength="1" pattern="[NnSsEeWw]" 
-									   title="Enter N, S, E, or W" required>
-							</td>
-						</tr>
-					{% endfor %}
-				</tbody>
-			</table>
-		{% endfor %}
-	{% endfor %}
-
-
-
-
-	<h3>Number Data</h3>
-	{% for number_dict in number_data %}
-		<h4>Number Data Key: {{ number_dict.keys() | first }}</h4>
-		<table class="table table-bordered">
-			<thead>
-				<tr>
-					<th>Index</th>
-					<th>Value</th>
-				</tr>
-			</thead>
-			<tbody>
-				{% for key, values in number_dict.items() %}
-					{% for number_index, value in enumerate(values) %}
-					<tr>
-						<td>{{ number_index }}</td>
-						<td>
-							<input type="number" name="number[{{ number_dict.keys() | first }}][{{ number_index }}]" 
-								   value="{{ value }}" required min="0" step="any">
-						</td>
-					</tr>
-					{% endfor %}
-				{% endfor %}
-			</tbody>
-		</table>
-	{% endfor %}
-
-    <h3>Time Data</h3>
-	{% for time_dict in time_data %}
-		<h4>Time Data Key: {{ time_dict.keys() | first }}</h4>
-		<table class="table table-bordered">
-			<thead>
-				<tr>
-					<th>Index</th>
-					<th>Hours (HH)</th>
-					<th>Minutes (MM)</th>
-					<th>Seconds (SS)</th>
-				</tr>
-			</thead>
-			<tbody>
-				{% for key, values in time_dict.items() %}
-					{% for time_index, value in enumerate(values) %}
-					<tr>
-						<td>{{ time_index }}</td>
-						<td>
-							<input type="number" name="{{ key }}_{{ time_index }}_hours" value="{{ value.split(':')[0] }}" min="0" max="23" required>
-						</td>
-						<td>
-							<input type="number" name="{{ key }}_{{ time_index }}_minutes" value="{{ value.split(':')[1] }}" min="0" max="59" required>
-						</td>
-						<td>
-							<input type="number" name="{{ key }}_{{ time_index }}_seconds" value="{{ value.split(':')[2] }}" min="0" max="59.99" step="0.01" required>
-						</td>
-					</tr>
-					{% endfor %}
-				{% endfor %}
-			</tbody>
-		</table>
-	{% endfor %}
-
-    <button type="submit" class="btn btn-primary">Update Results</button>
+        <button type="submit" class="btn btn-primary">Update Results</button>
     </form>
-	<br>
+    <br>
 
-	<h1>Download Coordinate Format Data to CSV</h1>
+    <!-- Buttons for download -->
+    <h1>Download Coordinate Format Data to CSV</h1>
     <form method="post" action="/download_csv_coordinate">
         <button type="submit">Download CSV</button>
     </form>
-	
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            <ul>
-                {% for category, message in messages %}
-                    <li class="{{ category }}">{{ message }}</li>
-                {% endfor %}
-            </ul>
-        {% endif %}
-    {% endwith %}
-    <br>
-	
-	<h1>Download Number Format Data to CSV</h1>
+
+    <h1>Download Number Format Data to CSV</h1>
     <form method="post" action="/download_csv_number">
         <button type="submit">Download CSV</button>
     </form>
-	
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            <ul>
-                {% for category, message in messages %}
-                    <li class="{{ category }}">{{ message }}</li>
-                {% endfor %}
-            </ul>
-        {% endif %}
-    {% endwith %}
-    <br>
 
-	<h1>Download Time Format Data to CSV</h1>
+    <h1>Download Time Format Data to CSV</h1>
     <form method="post" action="/download_csv_time">
         <button type="submit">Download CSV</button>
     </form>
-	
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            <ul>
-                {% for category, message in messages %}
-                    <li class="{{ category }}">{{ message }}</li>
-                {% endfor %}
-            </ul>
-        {% endif %}
-    {% endwith %}
+
     <br>
-    <a href="{{ url_for('get_plots') }}" class="btn btn-secondary">Show Graphs</a>
+
+    <!-- Button to show graphs -->
+    <a href="#" class="btn btn-secondary" id="show-graphs-btn">Show Graphs</a>
+
+    <!-- Loading Spinner -->
+    <img id="loading-spinner" src="{{ url_for('static', filename='spinner.gif') }}" alt="Loading...">
+
+    <!-- Overlay for dark background -->
+    <div id="loading-overlay"></div>
+
+    <script>
+        // Get the Show Graphs button and spinner
+        var showGraphsBtn = document.getElementById('show-graphs-btn');
+        var spinner = document.getElementById('loading-spinner');
+        var overlay = document.getElementById('loading-overlay');
+        var content = document.querySelector('body'); // All the content of the body
+
+        // Event listener for when the Show Graphs button is clicked
+        showGraphsBtn.addEventListener('click', function(event) {
+            event.preventDefault();  // Prevent default behavior of navigating to the graphs page
+
+            // Show overlay and spinner
+            overlay.style.display = 'block';  // Show overlay (dark background)
+            spinner.style.display = 'block';  // Show spinner
+
+            // Hide all content except for the spinner
+            content.classList.add('hide-content');  // Hide the entire page content
+
+            // Simulate a delay before navigating to the graphs page
+            setTimeout(function() {
+                window.location.href = "{{ url_for('get_plots') }}";  // Redirect to the graph page
+            }, 1000);  // Delay for 1 second before redirecting
+        });
+    </script>
 </body>
 </html>

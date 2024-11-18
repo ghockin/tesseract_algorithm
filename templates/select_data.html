@@ -7,6 +7,25 @@
     <style>
         body {
             padding: 20px;
+            margin: 0;
+            height: 100vh;
+        }
+
+        /* Spinner style */
+        #loading-spinner {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 50px;
+            height: 50px;
+            z-index: 10001; /* Ensure the spinner is on top */
+        }
+
+        /* Hide all content when spinner is visible */
+        .hide-content {
+            display: none;
         }
     </style>
 </head>
@@ -15,7 +34,7 @@
         <h1>Select Data Type and Key</h1>
 
         <!-- Form to select data type and provide key -->
-        <form action="/select_data" method="POST">
+        <form id="data-form" action="/select_data" method="POST">
             <div class="form-group">
                 <label for="data_type">Choose data type:</label>
                 <select name="data_type" id="data_type" class="form-control">
@@ -28,15 +47,58 @@
                 <label for="data_key">Enter a key for this data:</label>
                 <input type="text" id="data_key" name="data_key" class="form-control" placeholder="e.g., Location1, Speed, Timestamp" required>
             </div>
-            <button type="submit" class="btn btn-primary">Select ROI and Extract Data</button>
+            <button type="submit" class="btn btn-primary" id="select-roi-btn">Select ROI and Extract Data</button>
         </form>
 
         <!-- Button to go to results page -->
-        <form action="{{ url_for('results') }}" method="GET" style="margin-top: 20px;">
-            <button type="submit" class="btn btn-secondary" {% if not (coordinate_data or number_data or time_data) %} disabled {% endif %}>
+        <form action="{{ url_for('results') }}" method="GET" style="margin-top: 20px;" id="results-form">
+            <button type="submit" class="btn btn-secondary" id="results-btn" {% if not (coordinate_data or number_data or time_data) %} disabled {% endif %}>
                 Go to Results Page
             </button>
         </form>
     </div>
+
+    <!-- Your custom spinner (use your own spinner file) -->
+    <img id="loading-spinner" src="{{ url_for('static', filename='spinner.gif') }}" alt="Loading...">
+
+    <script>
+        // Get elements
+        var selectRoiButton = document.getElementById('select-roi-btn');
+        var resultsButton = document.getElementById('results-btn');
+        var spinner = document.getElementById('loading-spinner');
+        var dataForm = document.getElementById('data-form');
+        var resultsForm = document.getElementById('results-form');
+        var contentContainer = document.querySelector('.container');
+
+        // Show spinner and hide content when 'Select ROI and Extract Data' is pressed
+        dataForm.addEventListener('submit', function(event) {
+            event.preventDefault();  // Prevent the form from submitting immediately
+            selectRoiButton.classList.add('hide-content'); // Hide the select button
+            resultsButton.classList.add('hide-content'); // Hide the results button
+            contentContainer.classList.add('hide-content'); // Hide the whole content container
+            spinner.style.display = 'block'; // Show the spinner
+
+            // Simulate a delay (e.g., waiting for a server response)
+            setTimeout(function() {
+                // Simulate form submission completion
+                dataForm.submit(); // Now submit the form
+            }, 2000); // Adjust the timeout duration as needed
+        });
+
+        // Show spinner and hide content when 'Go to Results Page' is pressed
+        resultsForm.addEventListener('submit', function(event) {
+            event.preventDefault();  // Prevent immediate form submission
+            resultsButton.classList.add('hide-content'); // Hide the results button
+            selectRoiButton.classList.add('hide-content'); // Hide the select button
+            contentContainer.classList.add('hide-content'); // Hide the whole content container
+            spinner.style.display = 'block'; // Show the spinner
+
+            // Simulate a delay before proceeding to the results page
+            setTimeout(function() {
+                // Simulate navigation or form submission
+                resultsForm.submit(); // Now submit the form
+            }, 2000); // Adjust the timeout duration as needed
+        });
+    </script>
 </body>
 </html>

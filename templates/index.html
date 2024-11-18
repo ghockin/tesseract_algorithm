@@ -7,38 +7,94 @@
     <style>
         body {
             padding: 20px;
+            margin: 0;
+            height: 100vh;
+        }
+
+        /* Spinner style */
+        #loading-spinner {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 50px;
+            height: 50px;
+            z-index: 10001; /* Ensure the spinner is on top */
+        }
+
+        /* Hide all content when spinner is visible */
+        .hide-content {
+            display: none;
+        }
+
+        /* Optional: styling for the error messages */
+        ul {
+            color: red;
         }
     </style>
 </head>
 <body>
-	<div class="content">
-		<h2> Select Media </h2>
-		<!-- Display error messages if there are any -->
-		{% with messages = get_flashed_messages(with_categories=true) %}
-			{% if messages %}
-				<ul>
-					{% for category, message in messages %}
-						<li class="{{ category }}">{{ message }}</li>
-					{% endfor %}
-				</ul>
-			{% endif %}
-		{% endwith %}
-		
-		<form action="/upload" method="POST" enctype="multipart/form-data">
-			<label for="video">Select Video:</label>
-			<input type="file" id="video" name="video" accept=".mp4, .avi, .mov, .mkv" required>
+    <div class="content">
+        <h2>Select Media</h2>
 
-			<label for="start_time">Start Time (HH:MM:SS):</label>
-			<input type="time" name="start_time" step="1" required><br><br>
+        <!-- Display error messages if there are any -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <ul>
+                    {% for category, message in messages %}
+                        <li class="{{ category }}">{{ message }}</li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        {% endwith %}
 
-			<label for="end_time">End Time (HH:MM:SS):</label>
-			<input type="time" name="end_time" step="1" required><br><br>
+        <!-- Upload form -->
+        <div id="upload-div">
+            <form id="upload-form" action="/upload" method="POST" enctype="multipart/form-data">
+                <label for="video">Select Video:</label>
+                <input type="file" id="video" name="video" accept=".mp4, .avi, .mov, .mkv" required>
+                
+                <label for="start_time">Start Time (HH:MM:SS):</label>
+                <input type="time" name="start_time" step="1" required><br><br>
 
-			<label for="interval_time">Interval Time (HH:MM:SS):</label>
-			<input type="time" name="interval_time" step="1" required><br><br>
+                <label for="end_time">End Time (HH:MM:SS):</label>
+                <input type="time" name="end_time" step="1" required><br><br>
 
-			<input type="submit" value="Upload and Extract Frames">
-		</form>
-	</div>
+                <label for="interval_time">Interval Time (HH:MM:SS):</label>
+                <input type="time" name="interval_time" step="1" required><br><br>
+
+                <!-- Upload button -->
+                <input type="submit" value="Upload and Extract Frames" id="upload-btn">
+            </form>
+        </div>
+    </div>
+
+    <!-- Your custom spinner (use your own spinner file) -->
+    <img id="loading-spinner" src="{{ url_for('static', filename='spinner.gif') }}" alt="Loading...">
+
+    <script>
+        // Get elements
+        var uploadForm = document.getElementById('upload-form');
+        var uploadButton = document.getElementById('upload-btn');
+        var spinner = document.getElementById('loading-spinner');
+        var contentContainer = document.querySelector('.content');
+
+        // Show spinner and hide content when form is submitted
+        uploadForm.addEventListener('submit', function(event) {
+            event.preventDefault();  // Prevent immediate form submission
+            
+            // Hide all content
+            uploadButton.classList.add('hide-content'); // Hide the upload button
+            contentContainer.classList.add('hide-content'); // Hide the whole content container
+            spinner.style.display = 'block'; // Show the spinner
+
+            // Simulate a delay (e.g., waiting for a server response)
+            setTimeout(function() {
+                // Simulate form submission completion
+                uploadForm.submit(); // Now submit the form
+            }, 2000); // Adjust the timeout duration as needed
+        });
+    </script>
 </body>
 </html>
