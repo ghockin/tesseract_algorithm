@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Drawing and Box Selection</title>
+    <style>
+        #imageCanvas {
+            border: 1px solid black;
+        }
+        #boxLocations {
+            margin-top: 20px;
+        }
+        #errorMessage {
+            color: red;
+        }
+        #selectionMessage {
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Image Drawing and Box Selection</h1>
+
+    <!-- Image Upload Form -->
+    <div>
+        <input type="file" id="imageUpload" accept="image/*">
+        <button id="loadImageButton">Load Image</button>
+    </div>
+
+    <!-- Display current selection step -->
+    <div id="selectionMessage">Select direction</div>
+    <div id="errorMessage"></div>
+
+    <!-- Canvas to display image and draw boxes -->
+    <canvas id="imageCanvas"></canvas>
+
+    <div>
+        <button id="nextButton">Next</button>
+        <button id="clearButton">Clear</button>
+    </div>
+
+    <div id="boxLocations">
+        <!-- Display coordinates of boxes drawn -->
+    </div>
+
+    <script>
+        window.onload = function() {
+            const canvas = document.getElementById('imageCanvas');
+            const ctx = canvas.getContext('2d');
+            let img = new Image();
+            const MAX_BOXES = 1; // Only one box per section
+            let boxes = [];
+            let currentSelection = 1; // Tracks current selection state (1 = Select direction, 2 = Select coordinate, etc.)
+            let isDrawing = false;
+            let startX, startY, endX, endY;
+
+            // Load the image onto the canvas when chosen by the user
+            document.getElementById('loadImageButton').addEventListener('click', function() {
+                const fileInput = document.getElementById('imageUpload');
+                const file = fileInput.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        img.src = e.target.result;
+                    };
+                    reader.readAsDataURL(file);
+                } else {
+                    alert("Please select an image.");
+                }
+            });
+
+            img.onload = function() {
+                // Resize the canvas to the image's dimensions
+                canvas.width = img.width;
+                canvas.height = img.height;
+
+                // Draw the image on the canvas
+                ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear any previous content
+                ctx.drawImage(img, 0, 0);
+
+                // Reset boxes and other states when a new image is loaded
+                boxes = [];
+                currentSelection = 1;
+                updateSelectionMessage(); // Reset the selection message to "Select direction"
+                document.getElementById('boxLocations').innerHTML = '';
+                document.getElementById('errorMessage').textContent = '';
+            };
+
+            // Update the selection message based on the current selection step
+            function updateSelectionMessage() {
+                const selectionMessage = document.getElementById('selectionMessage');
+                switch (currentSelection) {
+                    case 1:
+                        selectionMessage.textContent = 'Select direction';
+                        break;
+                    case 2:
+                        selectionMessage.textContent = 'Select coordinate';
+                        break;
+                    case 3:
+                        selectionMessage.textContent = 'Select minutes';
+                        break;
+                    case 4:
+                        selectionMessage.textContent = 'Select seconds';
+                        break;
+                    default:
+                        selectionMessage.textContent = 'Done';
+                }
+            }
+
+            // Start drawing box on mouse down
+            canvas.addEventListener('mousedown', function(e) {
+                if (boxes.length >= currentSelection) {
+                    // Prevent drawing if the current section already has a box
+                    document.getElementById('errorMessage').textContent = `You can only draw one box per section.`;
+                    return;
+                }
+
+                isDrawing = true;
+                startX = e.offsetX;
+                startY = e.offsetY;
+                document.getElementById('errorMessage').textContent = ''; // Clear any previous error message
+            });
+
+            // Draw the box as the mouse moves
+            canvas.addEventListener('mousemove', function(e) {
+                if (!isDrawing) return;
+                endX = e.offsetX;
+                endY = e.offsetY;
+
+                // Redraw the image and boxes
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(img, 0, 0);
+
+                // Draw the current box
+                ctx.strokeStyle = 'red';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(startX, startY, endX - startX, endY - startY);
+            });
+
+            // Finish drawing the box on mouse up
+            canvas.addEventListener('mouseup', function() {
+                if (!isDrawing) return;
+                isDrawing = false;
+
+                // Add the box to the boxes array if not already present
+                if (boxes.length < currentSelection) {
+                    boxes.push({ startX, startY, endX, endY });
+
+                    // Redraw all boxes after adding a new one
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    ctx.drawImage(img, 0, 0);
+                    boxes.forEach(box => {
+                        ctx.strokeStyle = 'red';
+                        ctx.lineWidth = 2;
+                        ctx.strokeRect(box.startX, box.startY, box.endX - box.startX, box.endY - box.startY);
+                    });
+
+                    // Send the box coordinates to the backend using fetch
+                    fetch('/save_boxes', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            boxes: boxes
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        // Update the displayed box locations
+                        const boxLocationsDiv = document.getElementById('boxLocations');
+                        boxLocationsDiv.innerHTML = '';
+                        data.boxes.forEach(box => {
+                            const boxElement = document.createElement('h1');
+                            boxElement.textContent = `Box at (${box.startX}, ${box.startY}) - (${box.endX}, ${box.endY})`;
+                            boxLocationsDiv.appendChild(boxElement);
+                        });
+                    })
+                    .catch(error => console.error('Error sending box data:', error));
+                }
+            });
+
+            // Handle the "Next" button click to move through selections
+            document.getElementById('nextButton').addEventListener('click', function() {
+                if (boxes.length >= currentSelection) {
+                    if (currentSelection < 4) {
+                        currentSelection++; // Move to the next selection step
+                        updateSelectionMessage(); // Update the message
+                        document.getElementById('errorMessage').textContent = ''; // Clear any error message
+                    } else {
+                        alert("Selection process complete!");
+                    }
+                } else {
+                    document.getElementById('errorMessage').textContent = `Please draw a box for this section.`;
+                }
+            });
+
+            // Handle the "Clear" button click to reset the canvas and drawings
+            document.getElementById('clearButton').addEventListener('click', function() {
+                // Clear the canvas and reset the boxes
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                if (img.src) {
+                    ctx.drawImage(img, 0, 0); // Redraw the image
+                }
+                
+                // Reset boxes and selection message
+                boxes = [];
+                currentSelection = 1;
+                updateSelectionMessage(); // Reset the selection message to "Select direction"
+
+                // Clear the displayed box locations
+                const boxLocationsDiv = document.getElementById('boxLocations');
+                boxLocationsDiv.innerHTML = '';
+                
+                // Clear the error message
+                document.getElementById('errorMessage').textContent = '';
+            });
+
+            // Initialize the first selection message
+            updateSelectionMessage();
+        };
+    </script>
+
+</body>
+</html>
