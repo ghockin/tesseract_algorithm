@@ -1,0 +1,1 @@
+"assets\ffmpeg-master-latest-win64-gpl\ffmpeg-master-latest-win64-gpl\bin\ffmpeg.exe" -i uploads/video.mp4 uploads/converted_video.mp4

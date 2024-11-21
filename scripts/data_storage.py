@@ -2,7 +2,7 @@
 image_frames_path = 'static/images/frames/'
 image_output_path = 'static/images/output/'
 uploads_path = 'uploads/'
-
+video_path = 'uploads/converted_video.mp4'
 # extraction of video
 extraction_times_in_seconds = []
 

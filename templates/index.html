@@ -54,16 +54,6 @@
             <form id="upload-form" action="/upload" method="POST" enctype="multipart/form-data">
                 <label for="video">Select Video:</label>
                 <input type="file" id="video" name="video" accept=".mp4, .avi, .mov, .mkv" required>
-                
-                <label for="start_time">Start Time (HH:MM:SS):</label>
-                <input type="time" name="start_time" step="1" required><br><br>
-
-                <label for="end_time">End Time (HH:MM:SS):</label>
-                <input type="time" name="end_time" step="1" required><br><br>
-
-                <label for="interval_time">Interval Time (HH:MM:SS):</label>
-                <input type="time" name="interval_time" step="1" required><br><br>
-
                 <!-- Upload button -->
                 <input type="submit" value="Upload and Extract Frames" id="upload-btn">
             </form>

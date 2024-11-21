@@ -9,6 +9,7 @@ import data_storage as data_storage  # Import shared variables from data_storage
 from check_folder_exists import check_folder  # Import shared variables from data_storage
 import re
 import csv
+import subprocess
 
 app = Flask(__name__)
 app.secret_key = 'super secret key'
@@ -17,11 +18,19 @@ def new_load():
     check_folder(data_storage.image_frames_path)
     check_folder(data_storage.image_output_path)
     check_folder(data_storage.plot_path)
+    check_folder(data_storage.uploads_path)
 
 @app.route('/')
 def index():  
     new_load()
     return render_template('index.html')
+
+def convert_video():
+    current_directory = os.path.dirname(os.path.abspath(__file__))
+    bat_file = r"convert_video_script.bat"
+    bat_file_path = os.path.join(current_directory, bat_file)
+    result = subprocess.run(bat_file_path)
+
 
 @app.route('/upload', methods=['POST'])
 def upload_video():
@@ -37,6 +46,24 @@ def upload_video():
         flash("Invalid file format. Please upload a video file (MP4, AVI, MOV, MKV).", 'error')
         return redirect(url_for('index'))
     
+    
+    # Save video file to a temporary location
+    video_path = os.path.join(data_storage.uploads_path, "video.mp4")
+    video.save(video_path)
+    
+    convert_video()
+    
+    return redirect(url_for('get_edit_video'))
+
+
+@app.route('/get_edit_video', methods=['GET'])
+def get_edit_video():
+    return render_template('edit_video.html')
+
+@app.route('/edit_video', methods=['POST'])
+def edit_video():
+    video = data_storage.video_path
+      
     # Get start_time, end_time, and interval_time from the form
     start_time_str = request.form['start_time']
     end_time_str = request.form['end_time']
@@ -51,13 +78,10 @@ def upload_video():
     if start_time is None or end_time is None or interval_time is None:
         flash("Invalid time format! Please use HH:MM:SS format.", 'error')
         return redirect(url_for('index'))
-    
-    # Save video file to a temporary location
-    video_path = os.path.join(data_storage.uploads_path, video.filename)
-    video.save(video_path)
+   
     
     # Get the total video duration
-    video_duration = get_video_duration(video_path)
+    video_duration = get_video_duration(video)
     data_storage.video_length = video_duration
 
     # Check if start_time or end_time exceeds video duration
@@ -76,7 +100,7 @@ def upload_video():
     
 
     # Extract frames from video based on time range and interval
-    extract_frames(video_path, start_time, end_time, interval_time)
+    extract_frames(video, start_time, end_time, interval_time)
     
     return redirect(url_for('select_data'))
 
